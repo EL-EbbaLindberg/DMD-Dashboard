@@ -162,7 +162,7 @@ def klickad_manad():
 # ----------------------------
  
 # Läs in data - alla filer har kolumnen manad
-klass    = las("intakt_per_klass.csv")
+klass    = las("intakt_per_status.csv")
 status   = las("bokningar_per_status.csv")
 per_dag  = las("flygningar_per_dag.csv")
 toppen   = las("topp_passagerare.csv")
