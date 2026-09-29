@@ -129,7 +129,7 @@ def linje(df, x, y, titel):
 # ----------------------------
  
 # Läs in data 
-klass    = las("intakt_per_klass.csv")   # updaterad fil med kolumnen manad
+klass    = las("intakt_per_status.csv")   # updaterad fil med kolumnen manad
 status   = las("bokningar_per_status.csv")
 per_vecka = las("flygningar_per_vecka.csv")
 toppen   = las("topp_passagerare.csv")
