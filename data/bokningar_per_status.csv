@@ -1,4 +1,10 @@
-status,bokningar,intakt
-On time,430,342485.0
-Delayed,115,99578.0
-Cancelled,23,22714.0
+manad,status,bokningar,intakt
+2026-03,Cancelled,3,1447.00
+2026-03,Delayed,45,38492.00
+2026-03,"On time",142,101816.00
+2026-04,Cancelled,12,11361.00
+2026-04,Delayed,31,30197.00
+2026-04,"On time",162,120303.00
+2026-05,Cancelled,8,9906.00
+2026-05,Delayed,39,30889.00
+2026-05,"On time",131,117378.00
