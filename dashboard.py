@@ -162,10 +162,10 @@ def klickad_manad():
 # ----------------------------
  
 # Läs in data - alla filer har kolumnen manad
-klass    = las("intakt_per_klass_manad.csv")
-status   = las("bokningar_per_status_manad.csv")
+klass    = las("intakt_per_klass.csv")
+status   = las("bokningar_per_status.csv")
 per_dag  = las("flygningar_per_dag.csv")
-toppen   = las("passagerare_per_manad.csv")
+toppen   = las("topp_passagerare.csv")
  
  
 # Filter: månaden man klickat på i månadsgrafen - gäller ALLA grafer
