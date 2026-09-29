@@ -18,6 +18,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
+
 #------------------
 # DASHBOARD Design
 #-------------------
@@ -82,6 +83,8 @@ def stapel(df, x, y, titel):
         st.markdown(f"**{titel}**")
         if df.empty:
             return
+        # Slår ihop raderna per kategori (behövs när "Alla" månader är valt)
+        df = df.groupby(x, as_index=False)[y].sum()
         graf = alt.Chart(df).mark_bar(
             color=HUVUDFARG, cornerRadiusTopLeft=4, cornerRadiusTopRight=4
         ).encode(
@@ -97,6 +100,8 @@ def liggande(df, x, y, titel):
         st.markdown(f"**{titel}**")
         if df.empty:
             return
+        # Slår ihop per namn och behåller de 10 största
+        df = df.groupby(x, as_index=False)[y].sum().nlargest(10, y)
         graf = alt.Chart(df).mark_bar(
             color=ACCENT, cornerRadiusTopRight=4, cornerRadiusBottomRight=4
         ).encode(
@@ -117,48 +122,88 @@ def linje(df, x, y, titel):
             line={"color": LJUS}, color=LJUS, opacity=0.25
         ).encode(
             x=alt.X(f"{x}:T", title=None,
-                    axis=alt.Axis(format="%d %b", labelAngle=0, tickCount=6)),
+                    axis=alt.Axis(format="%d %b", labelAngle=0)),
             y=alt.Y(y, title=None),
             tooltip=[alt.Tooltip(f"{x}:T", format="%Y-%m-%d"), y],
         ).properties(height=HOJD)
         st.altair_chart(graf, use_container_width=True)
  
  
+# Klickbar stapelgraf per månad - ett klick filtrerar alla andra grafer
+def manadsgraf(df, y, titel):
+    klick = alt.selection_point(name="klick", fields=["manad"])
+    with st.container(border=True):
+        st.markdown(f"**{titel}**  ·  klicka på en månad · klicka på en tom yta för att visa alla")
+        if df.empty:
+            return
+        df = df.groupby("manad", as_index=False)[y].sum()
+        graf = alt.Chart(df).mark_bar(
+            color=ACCENT, cornerRadiusTopLeft=4, cornerRadiusTopRight=4
+        ).encode(
+            x=alt.X("manad", title=None, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y(y, title=None),
+            opacity=alt.condition(klick, alt.value(1), alt.value(0.35)),
+            tooltip=["manad", y],
+        ).add_params(klick).properties(height=120)
+        st.altair_chart(graf, use_container_width=True,
+                        on_select="rerun", key="manadsgraf")
+ 
+ 
+# Läser vilken månad som är klickad i månadsgrafen
+def klickad_manad():
+    try:
+        return st.session_state["manadsgraf"]["selection"]["klick"][0]["manad"]
+    except (KeyError, IndexError, TypeError):
+        return "Alla"
+ 
+ 
 # ----------------------------
 #  DINA ANALYSER - här byter du ut filnamn, kolumner och rubriker
 # ----------------------------
  
-# Läs in data 
-klass    = las("intakt_per_status.csv")   # updaterad fil med kolumnen manad
-status   = las("bokningar_per_status.csv")
-per_vecka = las("flygningar_per_vecka.csv")
-toppen   = las("topp_passagerare.csv")
+# Läs in data - alla filer har kolumnen manad
+klass    = las("intakt_per_klass_manad.csv")
+status   = las("bokningar_per_status_manad.csv")
+per_dag  = las("flygningar_per_dag.csv")
+toppen   = las("passagerare_per_manad.csv")
  
  
-# Filter: välj månad (måste stå EFTER att klass har lästs in)
-manader = ["Alla"] + sorted(klass["manad"].unique())
-vald = st.sidebar.selectbox("Månad", manader)
+# Filter: månaden man klickat på i månadsgrafen - gäller ALLA grafer
+alla_manader = klass            # sparas ofiltrerad, månadsgrafen ska alltid visa alla
+vald = klickad_manad()
  
-if vald != "Alla":
-    klass = klass[klass["manad"] == vald]
+def valj_manad(df):
+    """Behåller bara raderna för vald månad. 'Alla' ger alla rader."""
+    if vald == "Alla" or "manad" not in df.columns:
+        return df
+    return df[df["manad"] == vald]
+ 
+klass   = valj_manad(klass)
+status  = valj_manad(status)
+per_dag = valj_manad(per_dag)
+toppen  = valj_manad(toppen)
  
  
 # Rubrik
 st.title("SAS – bokningsöversikt")
-st.caption("Data från MySQL · mars–maj 2026")
+st.caption(f"Data från MySQL · {'mars–maj 2026' if vald == 'Alla' else vald}")
  
  
-#  Nyckeltal: fyra stora siffror 
+#  Nyckeltal: fyra stora siffror
 intakt     = summa(klass, "intakt")
 bokningar  = summa(klass, "antal_bokningar")
-flygningar = summa(per_vecka, "flygningar")
-forsenade  = summa(per_vecka, "forsenade")
+flygningar = summa(per_dag, "flygningar")
+forsenade  = summa(per_dag, "forsenade")
  
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Total intäkt", tal(intakt, " kr"))
 k2.metric("Bokningar",    tal(bokningar))
 k3.metric("Flygningar",   tal(flygningar))
 k4.metric("Andel försenade", f"{forsenade / flygningar:.0%}" if flygningar else "–")
+ 
+ 
+# Klickbar månadsgraf
+manadsgraf(alla_manader, y="intakt", titel="Intäkt per månad")
  
  
 # Rad 1: två grafer 
@@ -172,8 +217,9 @@ with h:
 # Rad 2: två grafer 
 v, h = st.columns(2)
 with v:
-    linje(per_vecka, x="vecka", y="flygningar", titel="Flygningar per vecka")
+    linje(per_dag, x="datum", y="flygningar", titel="Flygningar per dag")
 with h:
     liggande(toppen, x="passagerare", y="spenderat", titel="Topp 10 kunder – spenderat belopp")
+ 
  
  
