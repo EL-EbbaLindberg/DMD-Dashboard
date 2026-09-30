@@ -17,7 +17,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-
+import plotly.express as px
 
 #------------------
 # DASHBOARD Design
@@ -148,78 +148,51 @@ def manadsgraf(df, y, titel):
         st.altair_chart(graf, use_container_width=True,
                         on_select="rerun", key="manadsgraf")
  
- 
-# Läser vilken månad som är klickad i månadsgrafen
-def klickad_manad():
-    try:
-        return st.session_state["manadsgraf"]["selection"]["klick"][0]["manad"]
-    except (KeyError, IndexError, TypeError):
-        return "Alla"
+
  
  
-# ----------------------------
-#  DINA ANALYSER - här byter du ut filnamn, kolumner och rubriker
-# ----------------------------
- 
-# Läs in data - alla filer har kolumnen manad
-klass    = las("intakt_per_status.csv")
-status   = las("bokningar_per_status.csv")
-per_dag  = las("flygningar_per_dag.csv")
-toppen   = las("topp_passagerare.csv")
- 
- 
-# Filter: månaden man klickat på i månadsgrafen - gäller ALLA grafer
-alla_manader = klass            # sparas ofiltrerad, månadsgrafen ska alltid visa alla
-vald = klickad_manad()
- 
-def valj_manad(df):
-    """Behåller bara raderna för vald månad. 'Alla' ger alla rader."""
-    if vald == "Alla" or "manad" not in df.columns:
-        return df
-    return df[df["manad"] == vald]
- 
-klass   = valj_manad(klass)
-status  = valj_manad(status)
-per_dag = valj_manad(per_dag)
-toppen  = valj_manad(toppen)
- 
- 
-# Rubrik
-st.title("SAS – bokningsöversikt")
-st.caption(f"Data från MySQL · {'mars–maj 2026' if vald == 'Alla' else vald}")
- 
- 
-#  Nyckeltal: fyra stora siffror
-intakt     = summa(klass, "intakt")
-bokningar  = summa(klass, "antal_bokningar")
-flygningar = summa(per_dag, "flygningar")
-forsenade  = summa(per_dag, "forsenade")
- 
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Total intäkt", tal(intakt, " kr"))
-k2.metric("Bokningar",    tal(bokningar))
-k3.metric("Flygningar",   tal(flygningar))
-k4.metric("Andel försenade", f"{forsenade / flygningar:.0%}" if flygningar else "–")
- 
- 
-# Klickbar månadsgraf
-manadsgraf(alla_manader, y="intakt", titel="Intäkt per månad")
- 
- 
-# Rad 1: två grafer 
-v, h = st.columns(2)
-with v:
-    stapel(klass, x="ticket_class", y="intakt", titel="Intäkt per biljettklass")
-with h:
-    stapel(status, x="status", y="bokningar", titel="Bokningar per flygstatus")
- 
- 
-# Rad 2: två grafer 
-v, h = st.columns(2)
-with v:
-    linje(per_dag, x="datum", y="flygningar", titel="Flygningar per dag")
-with h:
-    liggande(toppen, x="passagerare", y="spenderat", titel="Topp 10 kunder – spenderat belopp")
- 
- 
- 
+st.header("Avgångsstatus")
+
+st.write("Diagrammet visar antalet avgångar fördelat efter status.")
+
+df = las("Status 1.csv")
+
+st.dataframe(df, hide_index=True)
+
+st.bar_chart(
+df,
+x="status",
+y="amount"
+)
+
+st.header("Kundbetyg")
+
+st.write("Diagrammet visar hur många omdömen som har fått respektive betyg.")
+
+df_rating = las("feedback.csv")
+
+st.dataframe(df_rating, hide_index=True)
+
+st.bar_chart(
+df_rating,
+x="rating",
+y="amount",
+color="green"
+)
+
+st.header("Hanterad feedback")
+
+st.write("Diagrammet visar andelen feedback som har markerats som hanterad respektive inte hanterad.")
+
+df_resolved = las("resolved.csv")
+
+st.dataframe(df_resolved, hide_index=True)
+
+fig = px.pie(
+df_resolved,
+names="resolved",
+values="amount",
+title="Fördelning av hanterad feedback"
+)
+
+st.plotly_chart(fig)
