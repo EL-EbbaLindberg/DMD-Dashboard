@@ -194,5 +194,26 @@ names="resolved",
 values="amount",
 title="Fördelning av hanterad feedback"
 )
-
 st.plotly_chart(fig)
+
+
+
+st.header("Vanligaste feedbackkommentarerna")
+
+st.write(
+"Diagrammet visar hur många gånger olika typer av kommentarer förekommer."
+)
+
+df_comments = las("comment.csv")
+
+st.dataframe(df_comments, hide_index=True)
+
+st.bar_chart(
+df_comments,
+x="comment",
+y="amount",
+color="green",
+horizontal=True
+)
+
+
